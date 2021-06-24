@@ -10,5 +10,5 @@ if __name__ == '__main__':
     seed(SEED)
     x, y = dg(POINTS)
     cls = ipl.Intpl1D(x, y)
-    cls.square(SAMPLING_STEP)
+    cls.lagrange(SAMPLING_STEP)
     cls.show()
