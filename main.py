@@ -52,11 +52,23 @@ if __name__ == '__main__':
     plt.show()
 
     plt.figure(figsize=(15, 9))
+    plt.subplot(1, 2, 1)
+    plt.title('производные равны 0')
     res = cls.cubical_smooth(SAMPLING_STEP)
     x = [elm[0] for elm in res]
     y = [elm[1] for elm in res]
     size = [TSIZE if elm in tx else SIZE for elm in x]
     colors = ['green' if elm in tx else 'red' for elm in x]
-    plt.scatter(x, y, c=colors, s=size, label='Кубическая (сглаженная)')
-    plt.legend()
+    plt.scatter(x, y, c=colors, s=size)
+
+    plt.subplot(1, 2, 2)
+    plt.title('производные вычислены по производным соответствующих окружностей')
+    res = cls.cubical_smooth(SAMPLING_STEP, derivs='c')
+    x = [elm[0] for elm in res]
+    y = [elm[1] for elm in res]
+    size = [TSIZE if elm in tx else SIZE for elm in x]
+    colors = ['green' if elm in tx else 'red' for elm in x]
+    plt.scatter(x, y, c=colors, s=size)
+
+    plt.suptitle('Кубическая интерполяция', fontsize=24)
     plt.show()
