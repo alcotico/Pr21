@@ -50,3 +50,13 @@ if __name__ == '__main__':
 
     plt.suptitle('Сравнение методов интерполяции', fontsize=24)
     plt.show()
+
+    plt.figure(figsize=(15, 9))
+    res = cls.cubical_smooth(SAMPLING_STEP)
+    x = [elm[0] for elm in res]
+    y = [elm[1] for elm in res]
+    size = [TSIZE if elm in tx else SIZE for elm in x]
+    colors = ['green' if elm in tx else 'red' for elm in x]
+    plt.scatter(x, y, c=colors, s=size, label='Кубическая (сглаженная)')
+    plt.legend()
+    plt.show()
