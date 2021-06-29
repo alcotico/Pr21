@@ -300,6 +300,7 @@ class Intpl1D:
 
         elif derivs == 'c':
             der = [0]
+            circles = []
             for i in range(1, points - 1):
                 x0 = self.data[i - 1][0]
                 x1 = self.data[i][0]
@@ -316,12 +317,13 @@ class Intpl1D:
                 # Примеч.: параметр R в программе можно не рассчитывать, поскольку при взятии производной он уходит как
                 # константа.
 
-                alpha = 2*(y0 - y2 - (y0 - y1)*(x2 - x0)/(x1 - x0))
-                b = (y0**2 - y2**2 + (x2 - x0)*(x1 - x2 + (x2 - x0)*(y2**2 - y0**2)/(x1 - x0)))/alpha
+                alpha = 2*(y1 - y2 - (x2-x1)*(y0-y1)/(x1-x0))
+                b = ((x2 - x1)*(y1**2 - y0**2 + x1**2 - x0**2)/(x1-x0) + x1**2 - x2**2 + y1**2 - y2**2) / alpha
                 del alpha
-                a = (x1 + x0) / 2 + (y1**2 - y0**2) / (2*(x1-x0)) + b * (y0 - y1)/(x1 - x0)
-                # R = (x1 - a)**2 + (y1 - b)**2
-                der.append((x1**2-a*x1)/(y1 - b))
+                a = (2*b*(y0 - y1) + y1**2 - y0**2 + x1**2 - x0**2) / (x1 - x0) * .5
+                r = np.sqrt((x2 - a)**2 + (y2 - b)**2)
+                der.append((a-x1)/(y1 - b))
+                circles.append([(a, b), r])
             der.append(0)
 
         for i in range(points - 1):
@@ -343,4 +345,7 @@ class Intpl1D:
             res.append((x1, y1))
 
         self.res = tuple(res)
-        return res
+        if derivs == 'z':
+            return res
+        elif derivs == 'c':
+            return res, circles

@@ -14,6 +14,9 @@ if __name__ == '__main__':
     tx, ty = dg(POINTS)
     cls = ipl.Intpl1D(tx, ty)
 
+    ####################################################################################################################
+    # сравнение четырех методов интерполяции
+    ####################################################################################################################
     plt.figure(figsize=(12, 7))
 
     plt.subplot(2, 2, 1)
@@ -51,24 +54,31 @@ if __name__ == '__main__':
     plt.suptitle('Сравнение методов интерполяции', fontsize=24)
     plt.show()
 
-    plt.figure(figsize=(15, 9))
-    plt.subplot(1, 2, 1)
-    plt.title('производные равны 0')
+    ####################################################################################################################
+    # сравнение улучшенных методов кубической интерполяции
+    ####################################################################################################################
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 15))
+    plt.suptitle('Кубическая интерполяция', fontsize=24)
+    ax1.set_title("y' = 0")
+    ax1.axis('equal')
     res = cls.cubical_smooth(SAMPLING_STEP)
     x = [elm[0] for elm in res]
     y = [elm[1] for elm in res]
     size = [TSIZE if elm in tx else SIZE for elm in x]
     colors = ['green' if elm in tx else 'red' for elm in x]
-    plt.scatter(x, y, c=colors, s=size)
+    ax1.scatter(x, y, c=colors, s=size)
 
-    plt.subplot(1, 2, 2)
-    plt.title('производные вычислены по производным соответствующих окружностей')
-    res = cls.cubical_smooth(SAMPLING_STEP, derivs='c')
+    ax2.set_title("y' = (a-x)/(y-b)")
+    ax2.axis('equal')
+    res, crl = cls.cubical_smooth(SAMPLING_STEP, derivs='c')
+
     x = [elm[0] for elm in res]
     y = [elm[1] for elm in res]
     size = [TSIZE if elm in tx else SIZE for elm in x]
     colors = ['green' if elm in tx else 'red' for elm in x]
-    plt.scatter(x, y, c=colors, s=size)
+    ax2.scatter(x, y, c=colors, s=size)
 
-    plt.suptitle('Кубическая интерполяция', fontsize=24)
+    for i in crl:
+        ax2.add_artist(plt.Circle(i[0], i[1], alpha=.2, edgecolor='black', fill=False))
+
     plt.show()
