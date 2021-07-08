@@ -2,9 +2,14 @@ import numpy as np
 from math import factorial as fct
 import matplotlib.pyplot as plt
 from datagen import datagen as dg
+from time import time
 
 
 class Spline:
+    """
+    Класс описывающий сплайн как аналитическую кривую в виде кубического полинома, где a, b, c, d - соответствующие
+    коэффициенты данной кривой, а xcur - значение узла данных, относительно которого идет построение.
+    """
 
     def __init__(self, a=0, b=1, c=2, d=6, xcur=0):
         self.a = a
@@ -14,24 +19,24 @@ class Spline:
         self.xcur = xcur
 
     def get_value(self, x):
+        """
+        Метода класса, позволяющий получить значение функции в заданной точке.
+        :param x: точка для рассчета
+        :return: значение функции в данной точке.
+        """
         return self.a + self.b*(x - self.xcur) + self.c / 2 * (x - self.xcur)**2 + self.d / 6 * (x - self.xcur)**3
 
 
 class SplineIpl:
+    """
+    Класс, позволяющий проводить сплайн-интерполяцию по исходным данным.
+    На вход подаются два массива х и у, которые обозначают узлы сетки и истинные значения в них, по которым и будет
+    проводится интерполяция.
 
+    В данном классе используется приведение матрицы коэффициентов к трех-диагональному виду и осуществляется ее решение
+    методом прогонки.
+    """
     def __init__(self, x, y):
-        if len(x) != len(y):
-            raise ValueError("Количество точек и значений функции не совпадают.")
-        if len(x) < 3:
-            raise ValueError("Слишком мало точек.")
-        points = len(x)
-        for i in range(points):
-            for j in range(i+1, points):
-                if x[j] < x[i]:
-                    x[j], x[i] = x[i], x[j]
-                    y[j], y[i] = y[i], y[j]
-        self.x = tuple(x)
-        self.y = tuple(y)
 
         def h(idx: int):
             if idx < 1 or idx >= len(self.x):
@@ -63,6 +68,21 @@ class SplineIpl:
             # конец прогонки
             return xs
 
+        if len(x) != len(y):
+            raise ValueError("Количество точек и значений функции не совпадают.")
+        if len(x) < 3:
+            raise ValueError("Слишком мало точек.")
+
+        start = time()
+        points = len(x)
+        for i in range(points):
+            for j in range(i+1, points):
+                if x[j] < x[i]:
+                    x[j], x[i] = x[i], x[j]
+                    y[j], y[i] = y[i], y[j]
+        self.x = tuple(x)
+        self.y = tuple(y)
+
         N = len(x)
         matrix = np.zeros(shape=(N-2, N-2))
         fm = np.zeros(N-2)
@@ -92,8 +112,16 @@ class SplineIpl:
         # tma(matrix, fm)
 
         self.res = tuple(Spline(a[i-1], b[i-1], c[i-1], d[i-1], self.x[i]) for i in range(1, len(self.x)))
+        end = time()
+        self.time = end - start
+        print()
 
     def show(self, s):
+        """
+        Позволяет графически отобразить полученное решение.
+        :param s: число промежуточных точек для интерполяции, помимо исходных.
+        :return: None.
+        """
         segment = list(np.linspace(self.x[0], self.x[len(spl.x) - 1], s + 1))
         last = 1
         for i in range(len(segment)):
@@ -104,7 +132,9 @@ class SplineIpl:
                 else:
                     last += 1
         fig, ax = plt.subplots(figsize=(15, 15))
-        plt.suptitle('Сплайн интерполяция', fontsize=24)
+        plt.suptitle('СПЛАЙН-ИНТЕРПОЛЯЦИЯ', fontsize=30)
+        plt.title('Затраченное время на рассчет интерполяционной кривой {:.6f}s'.format(self.time), fontsize=12,
+                  loc='left')
         # ax.axis('equal')
         func = []
         for x in segment:
@@ -121,17 +151,29 @@ class SplineIpl:
         colors = ['green' if elm in self.x else 'red' for elm in segment]
         ax.scatter(segment, func, c=colors, s=size)
         ax.plot(segment, func)
+        ax.minorticks_on()
+        ax.grid(which='major', axis='both', linestyle='--', linewidth=1.5)
+        ax.grid(which='minor', axis='both', linestyle='--', )
         plt.show()
         # print(len(segment) == len(func))
+        return None
 
 
 class SplineIpl2:
+    """
+    Класс, позволяющий проводить сплайн-интерполяцию по исходным данным.
+    На вход подаются два массива х и у, которые обозначают узлы сетки и истинные значения в них, по которым и будет
+    проводится интерполяция.
 
+    В данном классе используется составление матрицы коэффициентов "в лоб" по заданным условиям непрерывности и
+    гладкости с последующим ее решением посредством библиотеки NumPy (linalg.solve).
+    """
     def __init__(self, x, y):
         if len(x) != len(y):
             raise ValueError("Количество точек и значений функции не совпадают.")
         if len(x) < 3:
             raise ValueError("Слишком мало точек.")
+        start = time()
         points = len(x)
         for i in range(points):
             for j in range(i+1, points):
@@ -202,9 +244,15 @@ class SplineIpl2:
         for i in range(points-1):
             self.splines.append(Spline(abcd[4*i], abcd[4*i+1], abcd[4*i+2], abcd[4*i+3], self.x[i]))
 
-        print()
+        self.time = time() - start
 
     def show(self, s):
+        """
+        Позволяет графически отобразить полученное решение.
+
+        :param s: число промежуточных точек для интерполяции, помимо исходных.
+        :return: None
+        """
         segment = list(np.linspace(self.x[0], self.x[len(spl.x) - 1], s + 1))
         last = 1
         for i in range(len(segment)):
@@ -216,7 +264,9 @@ class SplineIpl2:
                     last += 1
 
         fig, ax = plt.subplots(figsize=(15, 15))
-        plt.suptitle('Сплайн интерполяция', fontsize=24)
+        plt.suptitle('СПЛАЙН-ИНТЕРПОЛЯЦИЯ', fontsize=30)
+        plt.title('Затраченное время на рассчет интерполяционной кривой {:.6f}s'.format(self.time), fontsize=12,
+                  loc='left')
         # ax.axis('equal')
         func = []
         for x in segment:
@@ -233,7 +283,11 @@ class SplineIpl2:
         colors = ['green' if elm in self.x else 'red' for elm in segment]
         ax.scatter(segment, func, c=colors, s=size)
         ax.plot(segment, func, c='indigo')
+        ax.minorticks_on()
+        ax.grid(which='major', axis='both', linestyle='--', linewidth=1.5)
+        ax.grid(which='minor', axis='both', linestyle='--',)
         plt.show()
+        return None
 
 
 ########################################################################################################################
