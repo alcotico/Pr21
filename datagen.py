@@ -11,9 +11,9 @@ def datagen(n, isint: bool = True):
     """
     '''зададим пределы генерации значений для x и y, т.е. x∊[xlow, xhigh) и  x∊[yxlow, yhigh)'''
     xlow = 0
-    xhigh = 100
-    ylow = 25
-    yhigh = 70
+    xhigh = 500
+    ylow = 0
+    yhigh = 200
 
     x = []
     y = []

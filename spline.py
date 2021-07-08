@@ -132,9 +132,7 @@ class SplineIpl:
                 else:
                     last += 1
         fig, ax = plt.subplots(figsize=(15, 15))
-        plt.suptitle('СПЛАЙН-ИНТЕРПОЛЯЦИЯ', fontsize=30)
-        plt.title('Затраченное время на рассчет интерполяционной кривой {:.6f}s'.format(self.time), fontsize=12,
-                  loc='left')
+        plt.suptitle('СПЛАЙН-ИНТЕРПОЛЯЦИЯ (3-х диаг. матрица)', fontsize=30)
         # ax.axis('equal')
         func = []
         for x in segment:
@@ -149,6 +147,9 @@ class SplineIpl:
                         continue
         size = [25 if elm in self.x else 0 for elm in segment]
         colors = ['green' if elm in self.x else 'red' for elm in segment]
+        plt.title('Затраченное время на рассчет интерполяционной кривой {:.3f}ms\n'.format(self.time * 1000) +
+                  'mean: {:.3f} | std^2: {:.3f}'.format(np.mean(func), np.var(func)), fontsize=12,
+                  loc='left')
         ax.scatter(segment, func, c=colors, s=size)
         ax.plot(segment, func)
         ax.minorticks_on()
@@ -264,9 +265,7 @@ class SplineIpl2:
                     last += 1
 
         fig, ax = plt.subplots(figsize=(15, 15))
-        plt.suptitle('СПЛАЙН-ИНТЕРПОЛЯЦИЯ', fontsize=30)
-        plt.title('Затраченное время на рассчет интерполяционной кривой {:.6f}s'.format(self.time), fontsize=12,
-                  loc='left')
+        plt.suptitle('СПЛАЙН-ИНТЕРПОЛЯЦИЯ ("в лоб")', fontsize=30)
         # ax.axis('equal')
         func = []
         for x in segment:
@@ -283,6 +282,9 @@ class SplineIpl2:
         colors = ['green' if elm in self.x else 'red' for elm in segment]
         ax.scatter(segment, func, c=colors, s=size)
         ax.plot(segment, func, c='indigo')
+        plt.title('Затраченное время на рассчет интерполяционной кривой {:.3f}ms\n'.format(self.time*1000) +
+                  'mean: {:.3f} | std^2: {:.3f}'.format(np.mean(func), np.var(func)), fontsize=12,
+                  loc='left')
         ax.minorticks_on()
         ax.grid(which='major', axis='both', linestyle='--', linewidth=1.5)
         ax.grid(which='minor', axis='both', linestyle='--',)
@@ -293,7 +295,7 @@ class SplineIpl2:
 ########################################################################################################################
 # Тест
 ########################################################################################################################
-POINTS = 10
+POINTS = 100
 SAMPLING = 1000
 SEED = 666
 
