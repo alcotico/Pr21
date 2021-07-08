@@ -1,4 +1,5 @@
 import numpy as np
+from math import factorial as fct
 import matplotlib.pyplot as plt
 from datagen import datagen as dg
 
@@ -13,7 +14,7 @@ class Spline:
         self.xcur = xcur
 
     def get_value(self, x):
-        return self.a + self.b*(x - self.xcur) + self.c*(x - self.xcur)**2 + self.d*(x - self.xcur)**3
+        return self.a + self.b*(x - self.xcur) + self.c / 2 * (x - self.xcur)**2 + self.d / 6 * (x - self.xcur)**3
 
 
 class SplineIpl:
@@ -95,7 +96,7 @@ class SplineIpl:
     def show(self, s):
         segment = list(np.linspace(self.x[0], self.x[len(spl.x) - 1], s + 1))
         last = 1
-        for i in range(len(segment)-1):
+        for i in range(len(segment)):
             if self.x[last] < segment[i]:
                 segment.insert(i, self.x[last])
                 if last + 1 == len(self.x)-1:
@@ -116,7 +117,7 @@ class SplineIpl:
                         break
                     else:
                         continue
-        size = [25 if elm in self.x else 3 for elm in segment]
+        size = [25 if elm in self.x else 0 for elm in segment]
         colors = ['green' if elm in self.x else 'red' for elm in segment]
         ax.scatter(segment, func, c=colors, s=size)
         ax.plot(segment, func)
@@ -124,14 +125,127 @@ class SplineIpl:
         # print(len(segment) == len(func))
 
 
+class SplineIpl2:
+
+    def __init__(self, x, y):
+        if len(x) != len(y):
+            raise ValueError("Количество точек и значений функции не совпадают.")
+        if len(x) < 3:
+            raise ValueError("Слишком мало точек.")
+        points = len(x)
+        for i in range(points):
+            for j in range(i+1, points):
+                if x[j] < x[i]:
+                    x[j], x[i] = x[i], x[j]
+                    y[j], y[i] = y[i], y[j]
+        self.x = tuple(x)
+        self.y = tuple(y)
+
+        def h(idx: int):
+            return self.x[idx+1] - self.x[idx]
+
+        coefs = np.zeros(shape=(4*(points-1), 4*(points-1)))
+        fmems = np.zeros(shape=(4*(points-1)))
+
+        # А_n-1 = Y_n-1
+        coefs[0, 4*(points-2)] = 1
+        fmems[0] = self.y[points-2]
+
+        # А_n-1 + B_n-1*H_n-1 + C_n-1/2 * (H_n-1)^2 + D_n-1/6 *(H_n-1)^3 = Y_n
+        buf = [0 for i in range(4*(points-2))]
+        buf.extend([h(points-2)**idx/fct(idx) for idx in range(4)])
+        coefs[1] = np.array(buf)
+        del buf
+        fmems[1] = self.y[points-1]
+
+        # C_0 = 0
+        coefs[2, 2] = 1
+        # fmems[2] = 0
+
+        # C_n-1 + D_n-1 * H_n-1 = 0
+        coefs[3, 4*(points-2)+2] = 1
+        coefs[3, 4*(points-2)+3] = h(points-2)
+        # fmems[3] = 0
+
+        cur_row = 4
+        for i in range(points-2):
+            # А_i = Y_i
+            coefs[cur_row, 4*i] = 1
+            fmems[cur_row] = self.y[i]
+            cur_row += 1
+
+            # А_i + B_i*H_i + C_i/2 * (H_i)^2 + D_i/6 * (H_i)^3 = Y_i+1
+            coefs[cur_row, 4*i] = 1
+            coefs[cur_row, 4*i + 1] = h(i)
+            coefs[cur_row, 4*i + 2] = h(i)**2 / 2
+            coefs[cur_row, 4*i + 3] = h(i)**3 / 6
+            fmems[cur_row] = self.y[i+1]
+            cur_row += 1
+
+            # B_i + C_i * H_i + D_i * (H_i)^2 = B_i+1
+            coefs[cur_row, 4 * i + 1] = 1
+            coefs[cur_row, 4 * (i+1) + 1] = -1
+            coefs[cur_row, 4 * i + 2] = h(i)
+            coefs[cur_row, 4 * i + 3] = h(i) ** 2 / 2
+            # fmems[cur_row] = 0
+            cur_row += 1
+
+            # C_i + D_i * H_i = C_i+1
+            coefs[cur_row, 4*i + 2] = 1
+            coefs[cur_row, 4*(i+1) + 2] = -1
+            coefs[cur_row, 4*i + 3] = h(i)
+            # fmems[cur_row] = 0
+            cur_row += 1
+
+        abcd = np.linalg.solve(coefs, fmems)
+        self.splines = []
+        for i in range(points-1):
+            self.splines.append(Spline(abcd[4*i], abcd[4*i+1], abcd[4*i+2], abcd[4*i+3], self.x[i]))
+
+        print()
+
+    def show(self, s):
+        segment = list(np.linspace(self.x[0], self.x[len(spl.x) - 1], s + 1))
+        last = 1
+        for i in range(len(segment)):
+            if self.x[last] < segment[i]:
+                segment.insert(i, self.x[last])
+                if last + 1 == len(self.x)-1:
+                    break
+                else:
+                    last += 1
+
+        fig, ax = plt.subplots(figsize=(15, 15))
+        plt.suptitle('Сплайн интерполяция', fontsize=24)
+        # ax.axis('equal')
+        func = []
+        for x in segment:
+            if x in self.x:
+                func.append(self.y[self.x.index(x)])
+            else:
+                for lim in range(1, len(self.x)):
+                    if x < self.x[lim]:
+                        func.append(self.splines[lim-1].get_value(x))
+                        break
+                    else:
+                        continue
+        size = [25 if elm in self.x else 0 for elm in segment]
+        colors = ['green' if elm in self.x else 'red' for elm in segment]
+        ax.scatter(segment, func, c=colors, s=size)
+        ax.plot(segment, func, c='indigo')
+        plt.show()
+
+
 ########################################################################################################################
 # Тест
 ########################################################################################################################
 POINTS = 10
-SAMPLING = 100
+SAMPLING = 1000
 SEED = 666
 
 np.random.seed(SEED)
 tx, ty = dg(POINTS)
 spl = SplineIpl(tx, ty)
+spl.show(SAMPLING)
+spl = SplineIpl2(tx, ty)
 spl.show(SAMPLING)
