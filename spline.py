@@ -91,16 +91,47 @@ class SplineIpl:
         # tma(matrix, fm)
 
         self.res = tuple(Spline(a[i-1], b[i-1], c[i-1], d[i-1], self.x[i]) for i in range(1, len(self.x)))
-        print()
+
+    def show(self, s):
+        segment = list(np.linspace(self.x[0], self.x[len(spl.x) - 1], s + 1))
+        last = 1
+        for i in range(len(segment)-1):
+            if self.x[last] < segment[i]:
+                segment.insert(i, self.x[last])
+                if last + 1 == len(self.x)-1:
+                    break
+                else:
+                    last += 1
+        fig, ax = plt.subplots(figsize=(15, 15))
+        plt.suptitle('Сплайн интерполяция', fontsize=24)
+        # ax.axis('equal')
+        func = []
+        for x in segment:
+            if x in self.x:
+                func.append(self.y[self.x.index(x)])
+            else:
+                for lim in range(1, len(self.x)):
+                    if x < self.x[lim]:
+                        func.append(self.res[lim-1].get_value(x))
+                        break
+                    else:
+                        continue
+        size = [25 if elm in self.x else 3 for elm in segment]
+        colors = ['green' if elm in self.x else 'red' for elm in segment]
+        ax.scatter(segment, func, c=colors, s=size)
+        ax.plot(segment, func)
+        plt.show()
+        # print(len(segment) == len(func))
 
 
 ########################################################################################################################
 # Тест
 ########################################################################################################################
 POINTS = 10
-SAMPLING_STEP = 20
+SAMPLING = 100
 SEED = 666
 
 np.random.seed(SEED)
 tx, ty = dg(POINTS)
 spl = SplineIpl(tx, ty)
+spl.show(SAMPLING)
